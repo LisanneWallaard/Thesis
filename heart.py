@@ -22,11 +22,10 @@ import matplotlib.pyplot as plt
 import os
 
 # Path to the model and shap values
-
 PATH_MODEL = "model/lr_heart.pkl"
 plot = 'shap'
-PATH_SHAP = "model/shap_val_lr.pkl"
-PATH_EXPL = "model/expl_lr.pkl"
+PATH_SHAP = "shap/shap_val_lr.pkl"
+PATH_EXPL = "shap/expl_lr.pkl"
 
 # PATH_MODEL = "model/dt_heart.pkl"
 # plot = 'feature_importance'
@@ -39,8 +38,8 @@ PATH_EXPL = "model/expl_lr.pkl"
 
 # PATH_MODEL = "model/svc_heart.pkl" # set probability=True during fitting
 # plot = 'shap'
-# PATH_SHAP = "model/shap_val_svc.pkl"
-# PATH_EXPL = "model/expl_svc.pkl"
+# PATH_SHAP = "shap/shap_val_svc.pkl"
+# PATH_EXPL = "shap/expl_svc.pkl"
 
 # Constants for scaling the input
 # Statistics of oldpeak

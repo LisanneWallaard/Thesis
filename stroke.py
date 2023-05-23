@@ -11,16 +11,28 @@ Date
 
 # Necessary imports
 # Installation of these libraries on your device are needed 
+# make sure libraries are up to date and do no conflict with each other
 import streamlit as st
 import pandas as pd
 import numpy as np
 import pickle 
 import os
+import shap # you need to have torch, tensorflow installed
+from streamlit_shap import st_shap
+import matplotlib.pyplot as plt
+import os
 
 # Path to the model
 PATH_MODEL = "model/lr_stroke.pkl"
-# PATH_MODEL = "model/rfc_stroke.pkl" # not fitted?
+plot = 'shap'
+PATH_SHAP = "shap/shap_val_lr_stroke.pkl"
+PATH_EXPL = "shap/expl_lr_stroke.pkl"
+
+# PATH_MODEL = "model/rf_stroke.pkl" 
+# plot = 'feature_importance'
+
 # PATH_MODEL = "model/svm_stroke.pkl" # set probability=True in the model
+# plot = 'not_given'
 
 
 def input_user() -> pd.DataFrame:
@@ -75,6 +87,25 @@ def output_prediction(prediction: int, prediction_prob: float):
         st.markdown(f"**:red[The probability that you will have"
                     f" stroke is {round(prediction_prob[0][1] * 100, 2)}%."
                     f" It sounds like you are not healthy!]**")
+        
+def plot_feature_importance(model_ml, feature_names):
+    """
+    Plots the feature importance of a model
+    """
+    # Calculate the Importance of the features
+    feature_importance = np.zeros(len(feature_names))
+    feature_importance = np.add(feature_importance, model_ml[-1].feature_importances_)
+
+    # Sort the features on Importance
+    index_sorted = feature_importance.argsort()
+
+    # Plot the Importance of the features
+    fig, ax = plt.subplots()
+    ax.barh(feature_names[index_sorted], feature_importance[index_sorted])
+    ax.set_xlabel("Feature Importance")
+    ax.set_title("Features sorted by Importance")
+    
+    st.pyplot(fig) 
 
 def main():
     # Add the title and icon of the web page
@@ -136,6 +167,21 @@ def main():
 
         # Print the prediction
         output_prediction(prediction, prediction_prob)
+        
+        # Explain the model
+        if plot == 'feature_importance':
+            st.markdown("""To explain how the prediction of the model is made, 
+                        the feature importances of the model is shown below.""")
+            plot_feature_importance(model_ml, df.columns)
+        elif plot == 'shap':
+            st.markdown("""To explain how the prediction of the model is made, 
+                        the SHAP values of the model is shown below.""")
+            # expl = pickle.load(open(PATH_EXPL, "rb")) # geeft error TypeError: code() argument 13 must be str, not int
+            # shap_val = expl(df)
+            shap_val = pickle.load(open(PATH_SHAP, "rb"))
+            shap.plots.bar(shap_val)
+            st_shap(shap.plots.bar(shap_val))
+            # st_shap(shap.force_plot(expl.expected_value, shap_val, df))
 
 if __name__ == "__main__":
     main()

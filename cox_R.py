@@ -12,6 +12,9 @@ Date
 # Inspirated by
 # https://goddoe.github.io/r/machine%20learning/2017/12/17/how-to-use-r-model-in-python.html
 
+# Necessary imports
+# Installation of these libraries on your device are needed 
+# make sure libraries are up to date and do no conflict with each other
 # Path to the model
 PATH_MODEL = "model/cox_num.rds"
 
