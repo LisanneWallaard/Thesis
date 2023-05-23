@@ -27,6 +27,7 @@ PATH_R = 'C:/Program Files/R/R-4.3.0'
 import os
 # Set your R path
 os.environ['R_HOME'] = PATH_R
+# os.environ['R_USER'] = os.path.dirname(rpy2.__file__)
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -35,6 +36,8 @@ from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from rpy2.robjects.conversion import localconverter 
+import rpy2.rinterface as rinterface
+
 
 # Activate converters
 pandas2ri.activate()
@@ -43,6 +46,7 @@ numpy2ri.activate()
 # Set R
 r = ro.r
 
+
 def input_user() -> pd.DataFrame:
     """
     Returns a DataFrame with the input of the user
@@ -50,15 +54,15 @@ def input_user() -> pd.DataFrame:
     
     age = st.sidebar.number_input("What is your age?", min_value=0, step = 1)
     options_sex = ("Female", "Male")
-    sex = st.sidebar.selectbox("Sex", options=options_sex)
+    sex = st.sidebar.selectbox("What is your sex?", options=options_sex)
     options_chest_pain = ("ASY", "ATA", "NAP", "TA")
-    chest_pain_type = st.sidebar.selectbox("What kind of chestpain do you have", options=options_chest_pain)
-    resting_bp = st.sidebar.number_input("What is your resting blood pressure (mmHg)?", min_value=0, step = 1)
-    cholesterol = st.sidebar.number_input("What is your cholesterol (mg/dL)?", min_value=0, step = 1)
+    chest_pain_type = st.sidebar.selectbox("What kind of chestpain do you have?", options=options_chest_pain)
+    resting_bp = st.sidebar.number_input("What is your resting blood pressure (mmHg)?", min_value=0, step=1)
+    cholesterol = st.sidebar.number_input("What is your cholesterol (mg/dL)?", min_value=0, step=1)
     options_yes_no = ("No", "Yes")
     fasting_bs = st.sidebar.selectbox("Do you have fasting blood sugar?", options=options_yes_no)
     resting_ecg = st.sidebar.selectbox("Do you have a LVH resting ECG?", options=options_yes_no)
-    max_hr = st.sidebar.number_input("What is your maximum heart rate achieved?", min_value=0, step = 1)
+    max_hr = st.sidebar.number_input("What is your maximum heart rate achieved?", min_value=0, step=1)
     exercise_angina = st.sidebar.selectbox("Do you have exercise induced angina?", options=options_yes_no)
     oldpeak = st.sidebar.number_input("What is your oldpeak (ST)?",step=0.1,format="%.1f")
     options_st_slope = ("Down", "Flat", "Up")
@@ -164,44 +168,28 @@ def main():
 
     # Add the title and subtitle of the front page
     st.title("Heart Failure Prediction")
-    st.subheader("Are you wondering about the condition of your heart? "
-                 "This app will help you to diagnose it!")
-
-    col1, col2 = st.columns([1, 3])
-
-    # Add an image on the front page
-    with col1:
-        st.image("images/doctor.png",
-                 caption="I'll help you diagnose your heart health! - Dr. Logistic Regression",
-                 width=150)
-        submission = st.button("Predict")
+    st.subheader("This web app can tell your probability to get a heart disease based on machine learning models. ")  
         
     # Add text on the front page
-    with col2:
-        st.markdown("""
-        Did you know that machine learning models can help you
-        predict heart disease pretty accurately? In this app, you can
-        estimate your chance of heart disease (yes/no) in seconds!
-        
-        Here, the application is based on several models. You can see the steps of building the model, 
-        evaluating it, and cleaning the data itself on [Kaggle](https://www.kaggle.com/code/burakdilber/heart-failure-eda-preprocessing-and-10-models). 
-        
-        To predict your heart disease status, simply follow the steps bellow:
-        1. Enter the parameters that best describe you;
-        2. Press the "Predict" button and wait for the result.
-            
-        **Keep in mind that this results is not equivalent to a medical diagnosis!
-        This model would never be adopted by health care facilities because of its less
-        than perfect accuracy, so if you have any problems, consult a human doctor.**
-        
-        **Author: Lisanne Wallaard**
-        
-        *Based on this [application](https://github.com/kamilpytlak/heart-condition-checker)*
-        """)
+    st.markdown("""
+    This application can use several models. You can see the steps of building the model, 
+    evaluating it, and cleaning the data itself on [Kaggle](https://www.kaggle.com/code/tanmay111999/heart-failure-prediction-cv-score-90-5-models).
+    
+    In order to get a prediction about your heart disease status, you need to take the following steps:
+    1. Fill in the asked input features.
+    2. Click on the "Predict" button and the prediction will show in a few seconds.
+    
+    **Keep in mind that this prediction is not the same as a medical diagnosis. 
+    It is based on a machine learning model and has an accuracy far from perfect.
+    Thus if you experience any health problems, please consult a human doctor.**
+    
+    **Author: Lisanne Wallaard**
+    
+    *Based on this [application](https://github.com/kamilpytlak/heart-condition-checker)*
+    """)
 
     # Add a sidebar with a picture for the input to the front page
     st.sidebar.title("Feature Selection")
-    st.sidebar.image("images/heart-sidebar.png", width=100)
 
     # Get the input data from the user
     df_input, df_options = input_user()
@@ -211,13 +199,19 @@ def main():
     df = preprocess_input(df_merge)
     # Put the dataframe in the correct order
     order = ['Age', 'Sex', 'ChestPainType.ASY', 'ChestPainType.ATA', 'ChestPainType.NAP', 'ChestPainType.TA', 'RestingBP',
-     'Cholesterol', 'FastingBS', 'RestingECG.LVH', 'MaxHR', 'ExerciseAngina.N', 
-     'ExerciseAngina.Y', 'Oldpeak', 'ST_Slope']
+    'Cholesterol', 'FastingBS', 'RestingECG.LVH', 'MaxHR', 'ExerciseAngina.N', 
+    'ExerciseAngina.Y', 'Oldpeak', 'ST_Slope']
     df = df[order]
     
     with localconverter(ro.default_converter + pandas2ri.converter):
         r_df = ro.conversion.rpy2py(df)
-  
+        
+    # Add a button to the side bar to submit the input data
+    submission = st.sidebar.button("Predict")
+    
+    # Add a button to the side bar to submit the input data
+    stop = st.sidebar.button("Stop")
+
     # Load the machine learning model
     model_ml = r.readRDS(PATH_MODEL)
 
@@ -229,8 +223,12 @@ def main():
         probability = r.predict(model_ml, new_data=r_df, type='prob')
         # Print the prediction
         output_prediction(prediction, probability)
+
+    if stop:
+        os._exit(0)
         
-
-
-if __name__ == "__main__":
+if __name__ == "__main__":   
+    
     main()
+    
+    
