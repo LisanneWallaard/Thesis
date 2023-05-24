@@ -14,12 +14,19 @@ Date
 
 # Path to the model
 PATH_MODEL = "model/rf_heart.rds"
+PATH_IMP = "explain/feature_importance_rf.rds"
+plot = 'feature_importance'
+
 # PATH_MODEL = "model/xgb_heart.rds"
+
 # PATH_MODEL = "model/bag_mars_heart.rds"
+
 # PATH_MODEL = "model/mars_heart.rds"
+
 # PATH_MODEL = "model/knn_heart.rds"
 
 # Path to R on your device
+# Enter R.home() in R studio for example
 PATH_R = 'C:/Program Files/R/R-4.3.0'
 
 # Necessary imports
@@ -36,7 +43,10 @@ from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from rpy2.robjects.conversion import localconverter 
-import rpy2.rinterface as rinterface
+#import rpy2.rinterface as rinterface
+import shap # you need to have torch, tensorflow installed
+from streamlit_shap import st_shap
+import matplotlib.pyplot as plt
 
 
 # Activate converters
@@ -144,19 +154,25 @@ def preprocess_input(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def output_prediction(prediction: int, prediction_prob: float):
-    if int(prediction[0][0]) == 0:
-        st.markdown(f"**The probability that you'll not have"
-                    f" a stroke is {round(prediction_prob[0][0] * 100, 2)}%."
-                    f" You are healthy!**")
-        st.image("images/heart-okay.jpg",
-                    caption="You seem to be okay! - Dr. Logistic Regression")
+    if prediction == 0:
+        st.markdown(f"**:green[The probability that you will have"
+                f" a heart disease is {round(prediction_prob * 100, 2)}%."
+                f" You seem to be healthy!]**")
     else:
-        st.markdown(f"**The probability that you will have"
-                    f" stroke is {round(prediction_prob[0][0] * 100, 2)}%."
-                    f" It sounds like you are not healthy.**")
-        st.image("images/heart-bad.jpg",
-                    caption="I'm not satisfied with the condition of health! - Dr. Logistic Regression")
-        
+        st.markdown(f"**:red[The probability that you will have"
+                    f" a heart disease is {round(prediction_prob * 100, 2)}%."
+                    f" It sounds like you are not healthy!]**")
+
+def plot_feature_importance(feature_importance, feature_names):
+    """
+    Plots the feature importance of a model
+    """
+    fig, ax = plt.subplots()
+    index_sorted = feature_importance.argsort()
+    ax.barh(feature_names[index_sorted], feature_importance[index_sorted])
+    ax.set_xlabel("Feature Importance")
+    ax.set_title("Features sorted by Importance")
+    st.pyplot(fig)       
     
 
 def main():
@@ -207,22 +223,47 @@ def main():
         r_df = ro.conversion.rpy2py(df)
         
     # Add a button to the side bar to submit the input data
-    submission = st.sidebar.button("Predict")
-    
-    # Add a button to the side bar to submit the input data
-    stop = st.sidebar.button("Stop")
+    submission = st.sidebar.button("Predict", type="secondary", use_container_width=True)
+
+    # Add a button to the side bar to stop the application
+    stop = st.sidebar.button(label="Stop", type="primary", use_container_width=True)
 
     # Load the machine learning model
-    model_ml = r.readRDS(PATH_MODEL)
-
+    model_ml = r.readRDS(PATH_MODEL)  
+    
+    vip = importr('vip')  
+    feature_importance_R = vip.vip(model_ml)  
+    feature_importance_R = feature_importance_R.rx2('data')
+    #feature_importance_R = r.readRDS(PATH_IMP)
+    with localconverter(ro.default_converter + pandas2ri.converter):
+        feature_importance = ro.conversion.rpy2py(feature_importance_R)
+    st.dataframe(feature_importance)
+    
     # Print the prediction
     if submission:
         # Get the class prediction
         prediction = r.predict(model_ml, new_data=r_df, type='class')
+
         # Get the probability of both classes
-        probability = r.predict(model_ml, new_data=r_df, type='prob')
+        prediction_prob = r.predict(model_ml, new_data=r_df, type='prob')
+
         # Print the prediction
-        output_prediction(prediction, probability)
+        output_prediction(int(prediction[0][0]), prediction_prob[0][1])
+        
+        # Explain the model
+        if plot == 'feature_importance':
+            st.markdown("""To explain how the prediction of the model is made, 
+                        the feature importances of the model is shown below.""")
+            plot_feature_importance(feature_importance['Importance'], feature_importance['Variable'])
+        elif plot == 'shap':
+            st.markdown("""To explain how the prediction of the model is made, 
+                        the SHAP values of the model is shown below.""")
+            # expl = pickle.load(open(PATH_EXPL, "rb")) # geeft error TypeError: code() argument 13 must be str, not int
+            # shap_val = expl(df)
+            shap_val = pickle.load(open(PATH_SHAP, "rb"))
+            shap.plots.bar(shap_val)
+            st_shap(shap.plots.bar(shap_val))
+            # st_shap(shap.force_plot(expl.expected_value, shap_val, df))
 
     if stop:
         os._exit(0)

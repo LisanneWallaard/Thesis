@@ -1,5 +1,6 @@
 #code is from https://www.kaggle.com/code/burakdilber/heart-failure-eda-preprocessing-and-10-models
 
+# Necessary installations
 #install.packages("tidyverse")
 #install.packages('GGally')
 #install.packages('superml')
@@ -11,7 +12,10 @@
 #install.packages('bonsai')
 #install.packages('xgboost')
 #install.packages('kknn')
+#install.packages('shapr')
+#install.packages('vip')
 
+# Necessary imports
 library(tidyverse)
 library(GGally)
 library(superml)
@@ -23,38 +27,43 @@ library(discrim)
 library(bonsai)
 library(xgboost)
 library(kknn)
+library(shapr)
+library(vip)
 
+################################################################################
+
+# Read in the data
 heart <- read_csv("data/heart.csv")
 heart %>% glimpse()
 heart %>% head()
 heart %>% summary()
 
-# transform character to factor
+# Transform character to factor
 heart <- heart %>%
   mutate_if(is.character, as.factor)
 heart %>% summary()
 heart %>% head()
 
-#check for missing values
+# Check for missing values
 heart %>%
   select(everything()) %>%
 summarise_all(funs(sum(is.na(.))))
 heart %>% head()
 
-#label encoding
+# Label encoding
 lbl = LabelEncoder$new()
 heart$Sex <- lbl$fit_transform(heart$Sex)
 heart$ST_Slope = lbl$fit_transform(heart$ST_Slope)
 heart %>% summary()
 heart %>% head()
 
-#one hot encoding
+# One hot encoding
 dummy_data <- dummyVars(" ~ .", data = heart)
 heart <- as.data.frame(predict(dummy_data, heart))
 heart %>% summary()
 heart %>% head()
 
-#feature selection
+# Feature selection
 feature_select <- Boruta(HeartDisease ~ ., data = heart)
 feature_select$finalDecision
 heart <- heart %>%
@@ -62,12 +71,12 @@ heart <- heart %>%
 glimpse(heart)
 heart %>% head()
 
-#convert factor to dependent variable
+# Convert factor to dependent variable
 heart$HeartDisease <- as.factor(heart$HeartDisease)
 glimpse(heart)
 heart %>% head()
 
-#split data
+# Split data
 model_recipe <- 
   recipe(HeartDisease ~ ., data = heart)
 set.seed(123)
@@ -77,14 +86,16 @@ heart_train <- training(heart_split)
 heart_test  <- testing(heart_split)
 heart_cv <- vfold_cv(heart_train, v = 10)
 
-#Random Forest Algorithm, best result given accuracy
+################################################################################
+
+# Random Forest Algorithm, best result given accuracy
 rf_model <- 
   rand_forest(mode = "classification",
               mtry = tune(),
               trees = tune(),
-              min_n = tune(),
-              engine = "ranger"
-  )
+              min_n = tune()
+  ) %>%
+  set_engine("ranger", importance = "impurity")
 set.seed(123)
 rf_wf <-
   workflow() %>%
@@ -112,15 +123,24 @@ heart_metrics <- metric_set(accuracy, f_meas, precision, recall)
 heart_metrics(data = test_performance_rf, truth = HeartDisease, estimate = .pred_class)
 conf_mat(test_performance_rf, HeartDisease, .pred_class)
 
-#extract the random forest model
+# Extract the random forest model
 rf_wf <- rf_wf %>%
   fit(heart_train)
 rf_wf
 model_rf = extract_fit_parsnip(rf_wf)
-predict(model_rf, heart_test[0:2,1:15])
 
-#save the random forest model
-saveRDS(model_rf, file = "model/rf_heart.rds")
+# Try some predictions
+predict(model_rf, heart_test[0:5,1:15], type='class')
+predict(model_rf, heart_test[0:5,1:15], type='prob')
+
+# Save the random forest model
+#saveRDS(model_rf, file = "model/rf_heart.rds") # niet meer nodig
+
+# Save feature importances of the random forest model
+feature_importance_rf = vip(model_rf)
+#saveRDS(feature_importance_rf$data, file = "explain/feature_importance_rf.rds")
+
+################################################################################
 
 # Extreme Gradient Boosting, second best model given accuracy
 xgboost_model <- 
@@ -171,6 +191,8 @@ predict(model_xgb, heart_test[0:2,1:15])
 
 #save the extreme gradient boosting model
 saveRDS(model_xgb, file = "model/xgb_heart.rds")
+
+################################################################################
 
 # Ensembles of Mars Models, shared third place given accuracy
 bag_mars_model <- 
@@ -226,6 +248,8 @@ predict(model_bag_mars, heart_test[0:2,1:15])
 #save the Ensembles of Mars Models, shared third place given accuracy
 saveRDS(model_bag_mars, file = "model/bag_mars_heart.rds")
 
+################################################################################
+
 #Multivariate Adaptive Regression Splines
 mars_model <- 
   mars(mode = "classification",
@@ -279,6 +303,8 @@ predict(model_mars, heart_test[0:2,1:15])
 
 #save the Multivariate Adaptive Regression Splines, shared third place given accuracy
 saveRDS(model_mars, file = "model/mars_heart.rds")
+
+################################################################################
 
 #K - Nearest Neighbor
 knn_model <- 

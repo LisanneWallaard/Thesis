@@ -24,8 +24,8 @@ import os
 # Path to the model and shap values
 PATH_MODEL = "model/lr_heart.pkl"
 plot = 'shap'
-PATH_SHAP = "shap/shap_val_lr.pkl"
-PATH_EXPL = "shap/expl_lr.pkl"
+PATH_SHAP = "explain/shap_val_lr.pkl"
+PATH_EXPL = "explain/expl_lr.pkl"
 
 # PATH_MODEL = "model/dt_heart.pkl"
 # plot = 'feature_importance'
@@ -38,8 +38,8 @@ PATH_EXPL = "shap/expl_lr.pkl"
 
 # PATH_MODEL = "model/svc_heart.pkl" # set probability=True during fitting
 # plot = 'shap'
-# PATH_SHAP = "shap/shap_val_svc.pkl"
-# PATH_EXPL = "shap/expl_svc.pkl"
+# PATH_SHAP = "explain/shap_val_svc.pkl"
+# PATH_EXPL = "explain/expl_svc.pkl"
 
 # Constants for scaling the input
 # Statistics of oldpeak
@@ -114,27 +114,27 @@ def preprocess_input(df: pd.DataFrame) -> pd.DataFrame:
 def output_prediction(prediction: int, prediction_prob: float):
     if prediction == 0:
         st.markdown(f"**:green[The probability that you'll have"
-                    f" a heart disease is {round(prediction_prob[0][1] * 100, 2)}%."
+                    f" a heart disease is {round(prediction_prob * 100, 2)}%."
                     f" You seem to be healthy!]**")
     else:
         st.markdown(f"**:red[The probability that you will have"
-                    f" a heart disease is {round(prediction_prob[0][1] * 100, 2)}%."
+                    f" a heart disease is {round(prediction_prob * 100, 2)}%."
                     f" It sounds like you are not healthy!]**")
         
-def plot_feature_importance(model_ml, feature_names):
+def plot_feature_importance(feature_importances, feature_names):
     """
     Plots the feature importance of a model
     """
     # Calculate the Importance of the features
-    feature_importance = np.zeros(len(feature_names))
-    feature_importance = np.add(feature_importance, model_ml.feature_importances_)
+    feature_importance_list = np.zeros(len(feature_names))
+    feature_importance_list = np.add(feature_importance_list, feature_importances)
 
     # Sort the features on Importance
-    index_sorted = feature_importance.argsort()
+    index_sorted = feature_importance_list.argsort()
 
     # Plot the Importance of the features
     fig, ax = plt.subplots()
-    ax.barh(feature_names[index_sorted], feature_importance[index_sorted])
+    ax.barh(feature_names[index_sorted], feature_importance_list[index_sorted])
     ax.set_xlabel("Feature Importance")
     ax.set_title("Features sorted by Importance")
     st.pyplot(fig) 
@@ -193,16 +193,18 @@ def main():
     if submission:
         # Get the class prediction
         prediction = model_ml.predict(df)
+
         # Get the probability of both classes
         prediction_prob = model_ml.predict_proba(df)
+
         # Print the prediction
-        output_prediction(prediction, prediction_prob)
+        output_prediction(prediction[0], prediction_prob[0][1])
         
         # Explain the model
         if plot == 'feature_importance':
             st.markdown("""To explain how the prediction of the model is made, 
                         the feature importances of the model is shown below.""")
-            plot_feature_importance(model_ml, df.columns)
+            plot_feature_importance(model_ml.feature_importances_, df.columns)
         elif plot == 'shap':
             st.markdown("""To explain how the prediction of the model is made, 
                         the SHAP values of the model is shown below.""")
