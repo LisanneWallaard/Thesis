@@ -133,12 +133,12 @@ model_rf = extract_fit_parsnip(rf_wf)
 predict(model_rf, heart_test[0:5,1:15], type='class')
 predict(model_rf, heart_test[0:5,1:15], type='prob')
 
-# Save the random forest model
-#saveRDS(model_rf, file = "model/rf_heart.rds") # niet meer nodig
-
 # Save feature importances of the random forest model
 feature_importance_rf = vip(model_rf)
 #saveRDS(feature_importance_rf$data, file = "explain/feature_importance_rf.rds")
+
+# Save the random forest model
+#saveRDS(model_rf, file = "model/rf_heart.rds") # niet meer nodig
 
 ################################################################################
 
@@ -152,9 +152,10 @@ xgboost_model <-
               learn_rate = tune(),
               loss_reduction = tune(),
               sample_size = tune(),
-              stop_iter = tune(),
-              engine = "xgboost"
-  )
+              stop_iter = tune()
+  ) %>%
+  set_engine("xgboost", importance = "impurity")
+
 set.seed(123)
 xgboost_wf <-
   workflow() %>%
@@ -187,10 +188,17 @@ xgboost_wf <- xgboost_wf %>%
   fit(heart_train)
 xgboost_wf
 model_xgb = extract_fit_parsnip(xgboost_wf)
-predict(model_xgb, heart_test[0:2,1:15])
 
-#save the extreme gradient boosting model
-saveRDS(model_xgb, file = "model/xgb_heart.rds")
+# Try some predictions
+predict(model_xgb, heart_test[0:5,1:15], type='class')
+predict(model_xgb, heart_test[0:5,1:15], type='prob')
+
+# Save feature importances of the extreme gradient boosting model
+feature_importance_xgb = vip(model_xgb)
+#saveRDS(feature_importance_xgb$data, file = "explain/feature_importance_xgb.rds")
+
+# Save the extreme gradient boosting model
+#saveRDS(model_xgb, file = "model/xgb_heart.rds")
 
 ################################################################################
 
@@ -199,9 +207,9 @@ bag_mars_model <-
   bag_mars( mode = "classification",
             num_terms = tune(),
             prod_degree = tune(),
-            prune_method = tune(),
+            prune_method = tune(), 
             engine = "earth"
-  )
+  ) 
 
 set.seed(123)
 bag_mars_wf <-
@@ -243,10 +251,17 @@ bag_mars_wf <- bag_mars_wf %>%
   fit(heart_train)
 bag_mars_wf
 model_bag_mars = extract_fit_parsnip(bag_mars_wf)
-predict(model_bag_mars, heart_test[0:2,1:15])
 
-#save the Ensembles of Mars Models, shared third place given accuracy
-saveRDS(model_bag_mars, file = "model/bag_mars_heart.rds")
+# Try some predictions
+predict(model_bag_mars, heart_test[0:5,1:15], type='class')
+predict(model_bag_mars, heart_test[0:5,1:15], type='prob')
+
+# Save feature importances of the Ensembles of Mars Models
+feature_importance_bag_mars = vip(model_bag_mars) # does not work
+#saveRDS(feature_importance_bag_mars$data, file = "explain/feature_importance_bag_mars.rds")
+
+# Save the Ensembles of Mars Models, shared third place given accuracy
+#saveRDS(model_bag_mars, file = "model/bag_mars_heart.rds")
 
 ################################################################################
 
@@ -255,7 +270,7 @@ mars_model <-
   mars(mode = "classification",
        num_terms = tune(),
        prod_degree = tune(),
-       prune_method = tune(),
+       prune_method = tune(), 
        engine = "earth"
   )
 
@@ -299,10 +314,17 @@ mars_wf <- mars_wf %>%
   fit(heart_train)
 mars_wf
 model_mars = extract_fit_parsnip(mars_wf)
-predict(model_mars, heart_test[0:2,1:15])
 
-#save the Multivariate Adaptive Regression Splines, shared third place given accuracy
-saveRDS(model_mars, file = "model/mars_heart.rds")
+# Try some predictions
+predict(model_mars, heart_test[0:5,1:15], type='class')
+predict(model_mars, heart_test[0:5,1:15], type='prob')
+
+# Save feature importances of the Multivariate Adaptive Regression Splines
+feature_importance_mars = vip(model_mars) # does not work
+#saveRDS(feature_importance_mars$data, file = "explain/feature_importance_mars.rds")
+
+# Save the Multivariate Adaptive Regression Splines, shared third place given accuracy
+#saveRDS(model_mars, file = "model/mars_heart.rds")
 
 ################################################################################
 
@@ -311,9 +333,9 @@ knn_model <-
   nearest_neighbor( mode = "classification",
                     neighbors = tune(),
                     weight_func = tune(),
-                    dist_power = tune(),
-                    engine = "kknn"
-  )
+                    dist_power = tune()
+  ) %>%
+  set_engine("kknn", importance = "impurity")
 
 set.seed(123)
 knn_wf <-
@@ -355,7 +377,14 @@ knn_wf <- knn_wf %>%
   fit(heart_train)
 knn_wf
 model_knn = extract_fit_parsnip(knn_wf)
-predict(model_knn, heart_test[0:2,1:15])
 
-#save the K - Nearest Neighbor
+# Try some predictions
+predict(model_knn, heart_test[0:5,1:15], type='class')
+predict(model_knn, heart_test[0:5,1:15], type='class')
+
+# Save feature importances of the K - Nearest Neighbor
+feature_importance_knn = vip(model_knn) # does not work
+#saveRDS(feature_importance_knn$data, file = "explain/feature_importance_knn.rds")
+
+# Save the K - Nearest Neighbor
 saveRDS(model_knn, file = "model/knn_heart.rds")

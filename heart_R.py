@@ -14,16 +14,19 @@ Date
 
 # Path to the model
 PATH_MODEL = "model/rf_heart.rds"
-PATH_IMP = "explain/feature_importance_rf.rds"
 plot = 'feature_importance'
 
 # PATH_MODEL = "model/xgb_heart.rds"
+# plot = 'feature_importance'
 
 # PATH_MODEL = "model/bag_mars_heart.rds"
+# plot = 'shap?'
 
 # PATH_MODEL = "model/mars_heart.rds"
+# plot = 'shap?'
 
 # PATH_MODEL = "model/knn_heart.rds"
+# plot = '?'
 
 # Path to R on your device
 # Enter R.home() in R studio for example
@@ -31,10 +34,11 @@ PATH_R = 'C:/Program Files/R/R-4.3.0'
 
 # Necessary imports
 # Installation of these libraries on your device are needed 
+# make sure libraries are up to date and do no conflict with each other
 import os
 # Set your R path
 os.environ['R_HOME'] = PATH_R
-# os.environ['R_USER'] = os.path.dirname(rpy2.__file__)
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -62,7 +66,7 @@ def input_user() -> pd.DataFrame:
     Returns a DataFrame with the input of the user
     """
     
-    age = st.sidebar.number_input("What is your age?", min_value=0, step = 1)
+    age = st.sidebar.number_input("What is your age?", min_value=0, step=1)
     options_sex = ("Female", "Male")
     sex = st.sidebar.selectbox("What is your sex?", options=options_sex)
     options_chest_pain = ("ASY", "ATA", "NAP", "TA")
@@ -231,14 +235,6 @@ def main():
     # Load the machine learning model
     model_ml = r.readRDS(PATH_MODEL)  
     
-    vip = importr('vip')  
-    feature_importance_R = vip.vip(model_ml)  
-    feature_importance_R = feature_importance_R.rx2('data')
-    #feature_importance_R = r.readRDS(PATH_IMP)
-    with localconverter(ro.default_converter + pandas2ri.converter):
-        feature_importance = ro.conversion.rpy2py(feature_importance_R)
-    st.dataframe(feature_importance)
-    
     # Print the prediction
     if submission:
         # Get the class prediction
@@ -252,6 +248,13 @@ def main():
         
         # Explain the model
         if plot == 'feature_importance':
+            vip = importr('vip')  
+            feature_importance_R = vip.vip(model_ml)  
+            feature_importance_R = feature_importance_R.rx2('data')
+            #feature_importance_R = r.readRDS(PATH_IMP)
+            with localconverter(ro.default_converter + pandas2ri.converter):
+                feature_importance = ro.conversion.rpy2py(feature_importance_R)
+            # st.dataframe(feature_importance)
             st.markdown("""To explain how the prediction of the model is made, 
                         the feature importances of the model is shown below.""")
             plot_feature_importance(feature_importance['Importance'], feature_importance['Variable'])
