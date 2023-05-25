@@ -14,6 +14,8 @@
 #install.packages('kknn')
 #install.packages('shapr')
 #install.packages('vip')
+#install.packages('glmnet')
+#install.packages('naivebayes')
 
 # Necessary imports
 library(tidyverse)
@@ -29,6 +31,8 @@ library(xgboost)
 library(kknn)
 library(shapr)
 library(vip)
+library(glmnet)
+library(naivebayes)
 
 ################################################################################
 
@@ -265,7 +269,7 @@ feature_importance_bag_mars = vip(model_bag_mars) # does not work
 
 ################################################################################
 
-#Multivariate Adaptive Regression Splines
+# Multivariate Adaptive Regression Splines, shared third place given accuracy
 mars_model <- 
   mars(mode = "classification",
        num_terms = tune(),
@@ -328,14 +332,14 @@ feature_importance_mars = vip(model_mars) # does not work
 
 ################################################################################
 
-#K - Nearest Neighbor
+# K - Nearest Neighbor, shared third place given accuracy
 knn_model <- 
   nearest_neighbor( mode = "classification",
                     neighbors = tune(),
                     weight_func = tune(),
-                    dist_power = tune()
-  ) %>%
-  set_engine("kknn", importance = "impurity")
+                    dist_power = tune(), 
+                    engine = "kknn"
+  )
 
 set.seed(123)
 knn_wf <-
@@ -380,11 +384,127 @@ model_knn = extract_fit_parsnip(knn_wf)
 
 # Try some predictions
 predict(model_knn, heart_test[0:5,1:15], type='class')
-predict(model_knn, heart_test[0:5,1:15], type='class')
-
-# Save feature importances of the K - Nearest Neighbor
-feature_importance_knn = vip(model_knn) # does not work
-#saveRDS(feature_importance_knn$data, file = "explain/feature_importance_knn.rds")
+predict(model_knn, heart_test[0:5,1:15], type='prob')
 
 # Save the K - Nearest Neighbor
-saveRDS(model_knn, file = "model/knn_heart.rds")
+#saveRDS(model_knn, file = "model/knn_heart.rds")
+
+###############################################################################
+
+# Logistic regression, shared third place given accuracy
+log_model <- 
+  logistic_reg(mode = "classification",
+               penalty = tune(),
+               mixture = tune()
+  ) %>%
+  set_engine("glmnet", importance = "impurity")
+
+set.seed(123)
+log_wf <-
+  workflow() %>%
+  add_model(log_model) %>% 
+  add_recipe(model_recipe)
+log_wf
+
+log_results <-
+  log_wf %>% 
+  tune_grid(resamples = heart_cv,
+            metrics = metric_set(accuracy)
+  )
+
+log_results %>%
+  collect_metrics()
+
+param_final_log <- log_results %>%
+  select_best(metric = "accuracy")
+param_final_log
+
+log_wf <- log_wf %>%
+  finalize_workflow(param_final_log)
+log_wf
+
+log_fit <- log_wf %>%
+  last_fit(heart_split)
+
+test_performance_log <- log_fit %>% collect_predictions()
+test_performance_log
+
+heart_metrics <- metric_set(accuracy, f_meas, precision, recall)
+heart_metrics(data = test_performance_log, truth = HeartDisease, estimate = .pred_class)
+
+conf_mat(test_performance_log, HeartDisease, .pred_class)
+
+# Extract the logistic regression
+log_wf <- log_wf %>%
+  fit(heart_train)
+log_wf
+model_log = extract_fit_parsnip(log_wf)
+
+# Try some predictions
+predict(model_log, heart_test[0:5,1:15], type='class')
+predict(model_log, heart_test[0:5,1:15], type='prob')
+
+# Save feature importances of the logistic regression
+feature_importance_log = vip(model_log)
+#saveRDS(feature_importance_log$data, file = "explain/feature_importance_log.rds")
+
+# Save the logistic regression
+#saveRDS(model_log, file = "model/log_heart.rds")
+
+################################################################################
+
+# Naive Bayes, shared third place given accuracy
+nb_model <- 
+  naive_Bayes(mode = "classification",
+              smoothness = tune(),
+              Laplace = tune(), 
+              engine = "naivebayes"
+  )
+
+set.seed(123)
+nb_wf <-
+  workflow() %>%
+  add_model(nb_model) %>% 
+  add_recipe(model_recipe)
+nb_wf
+
+nb_results <-
+  nb_wf %>% 
+  tune_grid(resamples = heart_cv,
+            metrics = metric_set(accuracy)
+  )
+
+nb_results %>%
+  collect_metrics()
+
+param_final_nb <- nb_results %>%
+  select_best(metric = "accuracy")
+param_final_nb
+
+nb_wf <- nb_wf %>%
+  finalize_workflow(param_final_nb)
+nb_wf
+
+nb_fit <- nb_wf %>%
+  last_fit(heart_split)
+
+test_performance_nb <- nb_fit %>% collect_predictions()
+test_performance_nb
+
+heart_metrics <- metric_set(accuracy, f_meas, precision, recall)
+heart_metrics(data = test_performance_nb, truth = HeartDisease, estimate = .pred_class)
+
+conf_mat(test_performance_nb, HeartDisease, .pred_class)
+
+# Extract the Naive Bayes
+nb_wf <- nb_wf %>%
+  fit(heart_train)
+nb_wf
+model_nb = extract_fit_parsnip(nb_wf)
+
+# Try some predictions
+predict(model_nb, heart_test[0:5,1:15], type='class')
+predict(model_nb, heart_test[0:5,1:15], type='prob')
+
+# Save the Naive Bayes
+#saveRDS(model_nb, file = "model/nb_heart.rds")

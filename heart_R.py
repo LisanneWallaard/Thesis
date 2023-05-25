@@ -13,8 +13,8 @@ Date
 # https://goddoe.github.io/r/machine%20learning/2017/12/17/how-to-use-r-model-in-python.html
 
 # Path to the model
-PATH_MODEL = "model/rf_heart.rds"
-plot = 'feature_importance'
+# PATH_MODEL = "model/rf_heart.rds"
+# plot = 'feature_importance'
 
 # PATH_MODEL = "model/xgb_heart.rds"
 # plot = 'feature_importance'
@@ -27,6 +27,12 @@ plot = 'feature_importance'
 
 # PATH_MODEL = "model/knn_heart.rds"
 # plot = '?'
+
+# PATH_MODEL = "model/log_heart.rds"
+# plot = 'feature_importance'
+
+PATH_MODEL = "model/nb_heart.rds"
+plot = '?'
 
 # Path to R on your device
 # Enter R.home() in R studio for example

@@ -50,7 +50,7 @@ def input_user() -> pd.DataFrame:
     time = st.sidebar.number_input("Over how many days do you want to know your survival prediction?", min_value=0, step=1)
     age = st.sidebar.number_input("What is your age?", min_value=0, step=1)
     ejection_fraction = st.sidebar.number_input("What is your ejection fraction?", min_value=0, step=1)
-    serum_creatinine = st.sidebar.number_input("What is your serum creatine?", min_value=0.0, step=0.1, format="%.1f")
+    serum_creatinine = st.sidebar.number_input("What is your serum creatine?", min_value=0.0, step=0.1, format="%.1f") # dit gaf een error?
     serum_sodium = st.sidebar.number_input("What is your serium sodium?", min_value=0, step=1)
     
     # Dataframe containing the input of the user

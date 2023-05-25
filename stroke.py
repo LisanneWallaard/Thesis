@@ -26,7 +26,7 @@ import os
 PATH_MODEL = "model/lr_stroke.pkl"
 plot = 'shap'
 PATH_SHAP = "explain/shap_val_lr_stroke.pkl"
-PATH_EXPL = "explain/expl_lr_stroke.pkl"
+# PATH_EXPL = "explain/expl_lr_stroke.pkl"
 
 # PATH_MODEL = "model/rf_stroke.pkl" 
 # plot = 'feature_importance'
@@ -152,6 +152,33 @@ def main():
     
     # Load the machine learning model
     model_ml = pickle.load(open(PATH_MODEL, "rb"))
+    
+    # st.write(model_ml[-1].coef_)
+    # coefs = pd.DataFrame(
+    # model_ml[-1].coef_,
+    # columns=['Coefficients'], index=df.columns
+    # )
+
+    # coefs.plot(kind='barh', figsize=(9, 7))
+    # plt.title('Ridge model')
+    # plt.axvline(x=0, color='.5')
+    # plt.subplots_adjust(left=.3)
+    # st.pyplot(fig)
+    
+    # Calculate the Importance of the features
+    feature_importance_list = np.zeros(len(df.columns))
+    feature_importance_list = np.add(feature_importance_list, model_ml[-1].coef_[0])
+
+    # Sort the features on Importance
+    index_sorted = feature_importance_list.argsort()
+
+    # Plot the Importance of the features
+    fig, ax = plt.subplots()
+    ax.barh(df.columns[index_sorted], feature_importance_list[index_sorted])
+    ax.set_xlabel("Feature Importance")
+    ax.set_title("Features sorted by Importance")
+    
+    st.pyplot(fig) 
     
     # Stop the application
     if stop:

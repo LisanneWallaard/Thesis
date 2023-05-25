@@ -22,10 +22,10 @@ import matplotlib.pyplot as plt
 import os
 
 # Path to the model and shap values
-PATH_MODEL = "model/lr_heart.pkl"
-plot = 'shap'
-PATH_SHAP = "explain/shap_val_lr.pkl"
-PATH_EXPL = "explain/expl_lr.pkl"
+# PATH_MODEL = "model/lr_heart.pkl"
+# plot = 'shap'
+# PATH_SHAP = "explain/shap_val_lr.pkl"
+# PATH_EXPL = "explain/expl_lr.pkl"
 
 # PATH_MODEL = "model/dt_heart.pkl"
 # plot = 'feature_importance'
