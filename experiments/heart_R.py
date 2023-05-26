@@ -28,9 +28,7 @@ import pandas as pd
 import streamlit as st
 import rpy2.robjects as ro
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
-from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import importr
-from rpy2.robjects.conversion import localconverter
 import matplotlib.pyplot as plt
 
 
@@ -55,9 +53,6 @@ plot = "feature_importance"  # set importance to impurity
 
 # PATH_MODEL = "model/nb_heart.rds"
 # plot = 'not_given'
-
-# Activate pandas2ri
-pandas2ri.activate()
 
 # Set R
 r = ro.r
@@ -148,12 +143,6 @@ def preprocess_input(df: pd.DataFrame):
         df_nan = df[col].dropna()
         df[col] = pd.DataFrame(le.fit_transform(df_nan))
 
-    # # Label some categorical variables
-    # for col in label_columns:
-    #     dummy_column = pd.get_dummies(df[col], prefix=col)
-    #     df = pd.concat([df, dummy_column], axis=1)
-    #     del df[col]
-
     # Define some categorical columns for one-hot encoding
     hot_columns = ["ChestPainType", "ExerciseAngina"]
     # Define the corresponding column names for one-hot encoding (same index as hot_columns)
@@ -173,7 +162,6 @@ def preprocess_input(df: pd.DataFrame):
 
     # Select only the first row (the user input data)
     df = df[:1]
-
     return df
 
 
@@ -252,7 +240,7 @@ def main():
 
     # Preprocess the input data
     df = preprocess_input(df_merge)
-    # Put the dataframe in the correct order
+    # Put the dataframe in the order I prefer
     order = [
         "Age",
         "Sex",
@@ -272,10 +260,6 @@ def main():
     ]
     df = df[order]
 
-    # Convert the pandas DataFrame to an R DataFrame
-    with localconverter(ro.default_converter + pandas2ri.converter):
-        r_df = ro.conversion.rpy2py(df)
-
     # Add a button to the side bar to submit the input data
     submission = st.sidebar.button("Predict", type="secondary", use_container_width=True)
 
@@ -292,13 +276,11 @@ def main():
     # Print the prediction
     if submission:
         # Get the class prediction
-        prediction = r.predict(model_ml, new_data=r_df, type="class")
-
+        prediction = r.predict(model_ml, new_data=df, type="class")
         # Get the probability of both classes
-        prediction_prob = r.predict(model_ml, new_data=r_df, type="prob")
-
+        prediction_prob = r.predict(model_ml, new_data=df, type="prob")
         # Print the prediction
-        output_prediction(int(prediction[0][0]), prediction_prob[0][1])
+        output_prediction(int(prediction.iloc[0, 0]), prediction_prob.iloc[0, 1])
 
         # Explain the model if given
         # Plot the feature importances of the model
@@ -308,14 +290,11 @@ def main():
             # Get the feature importances of the model as R DataFrame
             feature_importance_R = vip.vip(model_ml)
             feature_importance_R = feature_importance_R.rx2("data")
-            # Convert the R DataFrame to a pandas DataFrame
-            with localconverter(ro.default_converter + ro.pandas2ri.converter):
-                feature_importance = ro.conversion.rpy2py(feature_importance_R)
             st.markdown(
                 """To explain how the prediction of the model is made, 
                         the feature importances of the model is shown below."""
             )
-            plot_feature_importance(feature_importance["Importance"], feature_importance["Variable"])
+            plot_feature_importance(feature_importance_R["Importance"], feature_importance_R["Variable"])
 
 
 if __name__ == "__main__":

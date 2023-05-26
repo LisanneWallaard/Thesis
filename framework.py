@@ -26,9 +26,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import rpy2.robjects as ro
-from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import importr
-from rpy2.robjects.conversion import localconverter
 import matplotlib.pyplot as plt
 from streamlit_shap import st_shap
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
@@ -46,8 +44,6 @@ plot = "..."
 PATH_SHAP = "path_to_shap_values"
 
 # Only when R model is used
-# Activate pandas2ri
-pandas2ri.activate()
 # Set R
 r = ro.r
 
@@ -124,6 +120,10 @@ def preprocess_input(df: pd.DataFrame):
     # A list containing the columns for one hot encoding
     hot_columns = ["Gender"]
     # A list of lists containing the corresponding column names for one-hot encoding (same index as hot_columns)
+    # It is important to know that the one-hot encoder encodes the new columns
+    # in the alphabetical order of the input possibilites
+    # Your column names should therefore not only be the same as those of the training data,
+    # but also match this alphabetical order
     column_names = [["Female", "Male", "Other"]]
     # One-hot encode some categorical variables
     for col in hot_columns:
@@ -225,15 +225,13 @@ def main():
 
     # Preprocess the input data
     df = preprocess_input(df_merge)
+    # It is highly recommended to print this DataFrame and check if the input is correctly imported into the DataFrame:
+    # st.dataframe(df)
 
-    # When using one hot encoding the order or the names of the preprocessed DataFrame
-    # might not match the order of the model
-    order = ["Age", "Gender.Male", "Gender.Female", "Gender.Other", "avg_glucose_level"]
+    # You might want to change the order of the columns although it does not matter for the model
+    # However, it is important that the column names of the input data are the same as those of the training data
+    order = ["Age", "Male", "Female", "Other", "avg_glucose_level"]
     df = df[order]
-
-    # When an R model is used, it is necessary to convert the pandas DataFrame to an R DataFrame
-    with localconverter(ro.default_converter + pandas2ri.converter):
-        r_df = ro.conversion.rpy2py(df)
 
     # Add a button to the side bar to submit the input data
     submission = st.sidebar.button("Predict", type="secondary", use_container_width=True)
@@ -255,18 +253,23 @@ def main():
         # Get the class prediction of a pickle model
         prediction = model_pkl.predict(df)
         # Get the class prediction of a RDS model
-        prediction = r.predict(model_rds, new_data=r_df, type="class")
+        prediction = r.predict(model_rds, new_data=df, type="class")
+        # You might want to print the prediction directly to check if it is correct
+        # st.write(prediction)
 
         # Get the probability of both classes of a pickle model
         # For a svc/svm model it is needed to set probability=True during fitting
         prediction_prob = model_pkl.predict_proba(df)
         # Get the probability of both classes of a RDS model
-        prediction_prob = r.predict(model_rds, new_data=r_df, type="prob")
+        prediction_prob = r.predict(model_rds, new_data=df, type="prob")
+        # You might want to print the whole probability of the prediction directly to check if it is correct
+        # st.write(prediction_prob)
 
         # Print the prediction of a pickle model
         output_prediction(prediction[0], prediction_prob[0][1])
+
         # Print the prediction of a RDS model
-        output_prediction(int(prediction[0][0]), prediction_prob[0][1])
+        output_prediction(int(prediction.iloc[0, 0]), prediction_prob.iloc[0, 1])
 
         # Explain the model if given
         # Plot the feature importances of the model
@@ -287,10 +290,7 @@ def main():
             # Get the feature importances of the model as R DataFrame
             feature_importances_R = vip.vip(model_rds)
             feature_importances_R = feature_importances_R.rx2("data")
-            # Convert the R DataFrame to a pandas DataFrame
-            with localconverter(ro.default_converter + ro.pandas2ri.converter):
-                feature_importances = ro.conversion.rpy2py(feature_importances_R)
-            plot_feature_importance(feature_importances["Importance"], feature_importances["Variable"])
+            plot_feature_importance(feature_importances_R["Importance"], feature_importances_R["Variable"])
 
         # Plot the SHAP values of the model
         # Has only been tested for SHAP values of a pickle model

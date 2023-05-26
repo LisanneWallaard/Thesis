@@ -28,16 +28,10 @@ import pandas as pd
 import streamlit as st
 import rpy2.robjects as ro
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
-from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import importr
-from rpy2.robjects.conversion import localconverter
-from lifelines import CoxPHFitter
 
 # Path to the model
 PATH_MODEL = "model/cox_num.rds"
-
-# Activate pandas2ri
-pandas2ri.activate()
 
 # Set R
 r = ro.r
@@ -97,12 +91,6 @@ def preprocess_input(df: pd.DataFrame):
     for col in label_columns:
         df_nan = df[col].dropna()
         df[col] = pd.DataFrame(le.fit_transform(df_nan))
-
-    # # Label some categorical variables
-    # for col in label_columns:
-    #     dummy_column = pd.get_dummies(df[col], prefix=col)
-    #     df = pd.concat([df, dummy_column], axis=1)
-    #     del df[col]
 
     # Define some categorical columns for one-hot encoding
     hot_columns = ["ChestPainType", "ExerciseAngina"]
@@ -184,10 +172,6 @@ def main():
     # Get the input data from the user
     df_input = input_user()
 
-    # Convert the pandas DataFrame to an R DataFrame
-    with localconverter(ro.default_converter + pandas2ri.converter):
-        r_df = ro.conversion.rpy2py(df_input)
-
     # Add a button to the side bar to submit the input data
     submission = st.sidebar.button("Predict", type="secondary", use_container_width=True)
 
@@ -209,15 +193,15 @@ def main():
         # Get the class prediction
 
         # https://www.rdocumentation.org/packages/survival/versions/3.5-5/topics/predict.coxph
-        lp = survival.predict_coxph(model_ml, newdata=r_df, type="lp")
+        lp = survival.predict_coxph(model_ml, newdata=df_input, type="lp")
         st.write(lp)
-        risk = survival.predict_coxph(model_ml, newdata=r_df, type="risk")
+        risk = survival.predict_coxph(model_ml, newdata=df_input, type="risk")
         st.write(risk)
-        # expected = survival.predict_coxph(model_ml, newdata=r_df, type='expected')
+        # expected = survival.predict_coxph(model_ml, newdata=df_input, type='expected')
         # st.write(expected)
-        # terms = survival.predict_coxph(model_ml, newdata=r_df, type='terms')
+        # terms = survival.predict_coxph(model_ml, newdata=df_input, type='terms')
         # st.write(terms)
-        survival = survival.predict_coxph(model_ml, newdata=r_df, type="survival")
+        survival = survival.predict_coxph(model_ml, newdata=df_input, type="survival")
         st.write(survival)
 
 
