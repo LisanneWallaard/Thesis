@@ -51,6 +51,15 @@ pandas2ri.activate()
 # Set R
 r = ro.r
 
+# Example constants for scaling the numerical input
+# Statistics of age
+mean_age = 53.51
+std_age = 9.43
+
+# Statistics of cholesterol
+mean_cholesterol = 198.80
+std_cholesterol = 109.38
+
 
 def input_user():
     """Gives input possibilities for the user and saves their response
@@ -97,6 +106,42 @@ def preprocess_input(df: pd.DataFrame):
     Returns:
         pd.DataFrame: df contains preprocessed input of the user
     """
+    # Preprocessing of the input data needs to be done in the same way as the data for the model
+    # Two examples of label encoding data
+    # Manual label encoding
+    df["Gender"] = df["Gender"].replace({"Male": 0, "Female": 1, "Other": -1}).astype(np.uint8)
+    # Label encoder for categorical variables
+    le = LabelEncoder()
+    # A list containing the columns for label encoding
+    label_columns = ["Gender"]
+    # Label encode the columns of variables in label_columns
+    for col in label_columns:
+        df_nan = df[col].dropna()
+        df[col] = pd.DataFrame(le.fit_transform(df_nan))
+
+    # It is also possible to use one hot encoding for categorical variables
+    ohe = OneHotEncoder(handle_unknown="ignore")
+    # A list containing the columns for one hot encoding
+    hot_columns = ["Gender"]
+    # A list of lists containing the corresponding column names for one-hot encoding (same index as hot_columns)
+    column_names = [["Female", "Male", "Other"]]
+    # One-hot encode some categorical variables
+    for col in hot_columns:
+        df_nan = df[[col]].dropna()
+        encoder_df = pd.DataFrame(
+            ohe.fit_transform(df_nan).toarray(), columns=column_names[hot_columns.index(col)]
+        )
+        df = df.join(encoder_df)
+        del df[col]
+
+    # An example of scaling numerical variables
+    df["Age"] = df[["Age"]].apply(lambda x: ((x - mean_age) / std_age))
+    df["avg_glucose_level"] = df[["avg_glucose_level"]].apply(
+        lambda x: ((x - mean_cholesterol) / std_cholesterol)
+    )
+
+    # Select only the first row (the user input data) if multiple rows are present
+    df = df[:1]
 
     return df
 
@@ -122,23 +167,19 @@ def output_prediction(prediction: int, prediction_prob: float):
         )
 
 
-def plot_feature_importance(feature_importance, feature_names):
+def plot_feature_importance(feature_importances, feature_names):
     """Plots the feature importances of a model
 
     Args:
         feature_importance: contains the feature importances of the model
         feature_names: contains the feature names of the model
     """
-    # Calculate the Importance of the features
-    feature_importance_list = np.zeros(len(feature_names))
-    feature_importance_list = np.add(feature_importance_list, feature_importance)
-
     # Sort the features on Importance
-    index_sorted = feature_importance_list.argsort()
+    index_sorted = feature_importances.argsort()
 
     # Plot the Importance of the features
     fig, ax = plt.subplots()
-    ax.barh(feature_names[index_sorted], feature_importance_list[index_sorted])
+    ax.barh(feature_names[index_sorted], feature_importances[index_sorted])
     ax.set_xlabel("Feature Importance")
     ax.set_title("Features sorted by Importance")
 
@@ -185,6 +226,11 @@ def main():
     # Preprocess the input data
     df = preprocess_input(df_merge)
 
+    # When using one hot encoding the order or the names of the preprocessed DataFrame
+    # might not match the order of the model
+    order = ["Age", "Gender.Male", "Gender.Female", "Gender.Other", "avg_glucose_level"]
+    df = df[order]
+
     # When an R model is used, it is necessary to convert the pandas DataFrame to an R DataFrame
     with localconverter(ro.default_converter + pandas2ri.converter):
         r_df = ro.conversion.rpy2py(df)
@@ -230,18 +276,21 @@ def main():
                         the feature importances of the model is shown below."""
             )
             # The following approach applies for a pickle model
-            plot_feature_importance(model_pkl.feature_importances_, df.columns)
+            # Calculate the Importance of the features
+            feature_importances_pkl = np.zeros(len(df.columns))
+            feature_importances_pkl = np.add(feature_importances_pkl, model_pkl.feature_importances_)
+            plot_feature_importance(feature_importances_pkl, df.columns)
 
             # This approach applies for a RDS model
             # Load the vip library in R
             vip = importr("vip")
             # Get the feature importances of the model as R DataFrame
-            feature_importance_R = vip.vip(model_rds)
-            feature_importance_R = feature_importance_R.rx2("data")
+            feature_importances_R = vip.vip(model_rds)
+            feature_importances_R = feature_importances_R.rx2("data")
             # Convert the R DataFrame to a pandas DataFrame
             with localconverter(ro.default_converter + ro.pandas2ri.converter):
-                feature_importance = ro.conversion.rpy2py(feature_importance_R)
-            plot_feature_importance(feature_importance["Importance"], feature_importance["Variable"])
+                feature_importances = ro.conversion.rpy2py(feature_importances_R)
+            plot_feature_importance(feature_importances["Importance"], feature_importances["Variable"])
 
         # Plot the SHAP values of the model
         # Has only been tested for SHAP values of a pickle model
@@ -250,8 +299,9 @@ def main():
                 """To explain how the prediction of the model is made, 
                         the SHAP values of the model is shown below."""
             )
+            # Load the SHAP values
             shap_val = pickle.load(open(PATH_SHAP, "rb"))
-            shap.plots.bar(shap_val)
+            # Plot the SHAP values as a bar plot
             st_shap(shap.plots.bar(shap_val))
 
 

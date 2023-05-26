@@ -13,8 +13,8 @@ Date
 # https://goddoe.github.io/r/machine%20learning/2017/12/17/how-to-use-r-model-in-python.html
 
 # Necessary imports
-# Installation of these libraries on your device are needed
-# make sure libraries are up to date and do no conflict with each other
+# Make sure libraries have the correct version (see requirements.txt)
+# Some libraries require additional libraries to be installed
 import os
 
 # Path to R on your device
@@ -63,12 +63,12 @@ pandas2ri.activate()
 r = ro.r
 
 
-def input_user() -> pd.DataFrame:
+def input_user():
     """Gives input possibilities for the user and saves their response
 
     Returns:
-        input_df: a pandas DataFrame containing the input of the user
-        options_df: a pandas DataFrame containing the input possibilities for the user
+        pd.DataFrame: input_df contains the input of the user
+        pd.DataFrame: options_df contains the input possibilities for the user
     """
     age = st.sidebar.number_input("What is your age?", min_value=0, step=1)
     options_sex = ("Female", "Male")
@@ -103,7 +103,8 @@ def input_user() -> pd.DataFrame:
         }
     )
 
-    # Dataframe containing the input possibilities for the user
+    # A dictionary containing the input possibilities for the user
+    # A slightly diferent approach to handle the different lengths given
     options_dict = {
         "Age": list(range(0, 126)),
         "Sex": list(options_sex),
@@ -117,14 +118,20 @@ def input_user() -> pd.DataFrame:
         "Oldpeak": list(np.arange(-2.6, 6.2, 0.1)),
         "ST_Slope": list(options_st_slope),
     }
+    # Convert the dictionary to a DataFrame
     options_df = pd.DataFrame(dict([(key, pd.Series(value)) for key, value in options_dict.items()]))
 
     return input_df, options_df
 
 
-def preprocess_input(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Returns a DataFrame with the preprocessed input of the user
+def preprocess_input(df: pd.DataFrame):
+    """Preprocesses the input of the user
+
+    Args:
+        df (pd.DataFrame): contains not preprocessed input of the user
+
+    Returns:
+        pd.DataFrame: df contains preprocessed input of the user
     """
 
     # One-hot encoder for some categorical variables
@@ -192,8 +199,11 @@ def output_prediction(prediction: int, prediction_prob: float):
 
 
 def plot_feature_importance(feature_importance, feature_names):
-    """
-    Plots the feature importance of a model
+    """Plots the feature importances of a model
+
+    Args:
+        feature_importance: contains the feature importances of the model
+        feature_names: contains the feature names of the model
     """
     fig, ax = plt.subplots()
     index_sorted = feature_importance.argsort()
@@ -275,6 +285,10 @@ def main():
     # Load the machine learning model
     model_ml = r.readRDS(PATH_MODEL)
 
+    # Stop the application
+    if stop:
+        os._exit(0)
+
     # Print the prediction
     if submission:
         # Get the class prediction
@@ -286,23 +300,22 @@ def main():
         # Print the prediction
         output_prediction(int(prediction[0][0]), prediction_prob[0][1])
 
-        # Explain the model
+        # Explain the model if given
+        # Plot the feature importances of the model
         if plot == "feature_importance":
+            # Load the vip library in R
             vip = importr("vip")
+            # Get the feature importances of the model as R DataFrame
             feature_importance_R = vip.vip(model_ml)
             feature_importance_R = feature_importance_R.rx2("data")
-            # feature_importance_R = r.readRDS(PATH_IMP)
+            # Convert the R DataFrame to a pandas DataFrame
             with localconverter(ro.default_converter + ro.pandas2ri.converter):
                 feature_importance = ro.conversion.rpy2py(feature_importance_R)
-            # st.dataframe(feature_importance)
             st.markdown(
                 """To explain how the prediction of the model is made, 
                         the feature importances of the model is shown below."""
             )
             plot_feature_importance(feature_importance["Importance"], feature_importance["Variable"])
-
-    if stop:
-        os._exit(0)
 
 
 if __name__ == "__main__":

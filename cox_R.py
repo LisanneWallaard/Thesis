@@ -43,9 +43,12 @@ pandas2ri.activate()
 r = ro.r
 
 
-def input_user() -> pd.DataFrame:
-    """
-    Returns a DataFrame with the input of the user
+def input_user():
+    """Gives input possibilities for the user and saves their response
+
+    Returns:
+        pd.DataFrame: input_df contains the input of the user
+        pd.DataFrame: options_df contains the input possibilities for the user
     """
     time = st.sidebar.number_input(
         "Over how many days do you want to know your survival prediction?", min_value=0, step=1
@@ -72,11 +75,15 @@ def input_user() -> pd.DataFrame:
     return input_df
 
 
-def preprocess_input(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Returns a DataFrame with the preprocessed input of the user
-    """
+def preprocess_input(df: pd.DataFrame):
+    """Preprocesses the input of the user
 
+    Args:
+        df (pd.DataFrame): contains not preprocessed input of the user
+
+    Returns:
+        pd.DataFrame: df contains preprocessed input of the user
+    """
     # One-hot encoder for some categorical variables
     ohe = OneHotEncoder(handle_unknown="ignore")
 
@@ -120,18 +127,24 @@ def preprocess_input(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-# def output_prediction(prediction, prediction_prob):
-#     if int(prediction[0][0]) == 0:
+# def output_prediction(prediction: int, prediction_prob: float):
+#     """Prints the prediction itself and the probability of the prediction
+
+#     Args:
+#         prediction (int): the prediction of the model, 0 (healthy) or 1 (not healthy)
+#         prediction_prob (float): the probability of the prediction
+#     """
+#     if prediction == 0:
 #         st.markdown(
-#             f"**The probability that you will have"
-#             f" heart failure is {round(prediction_prob[0][1] * 100, 2)}%."
-#             f" You seem to be healthy!**"
+#             f"**:green[The probability that you will have"
+#             f" ... is {round(prediction_prob * 100, 2)}%."
+#             f" You seem to be healthy!]**"
 #         )
 #     else:
 #         st.markdown(
-#             f"**The probability that you will have"
-#             f" heart failure is {round(prediction_prob[0][1] * 100, 2)}%."
-#             f" It sounds like you are not healthy.**"
+#             f"**:red[The probability that you will have"
+#             f" ... is {round(prediction_prob * 100, 2)}%."
+#             f" It sounds like you are not healthy!]**"
 #         )
 
 
@@ -170,11 +183,10 @@ def main():
 
     # Get the input data from the user
     df_input = input_user()
-    # st.dataframe(df_input)
 
+    # Convert the pandas DataFrame to an R DataFrame
     with localconverter(ro.default_converter + pandas2ri.converter):
         r_df = ro.conversion.rpy2py(df_input)
-    # st.dataframe(r_df)
 
     # Add a button to the side bar to submit the input data
     submission = st.sidebar.button("Predict", type="secondary", use_container_width=True)
@@ -185,8 +197,12 @@ def main():
     # Load the machine learning model
     model_ml = r.readRDS(PATH_MODEL)
 
-    # model_cox = CoxPHFitter()
+    # Load the survival library in R
     survival = importr("survival")
+
+    # Stop the application
+    if stop:
+        os._exit(0)
 
     # Print the prediction
     if submission:
@@ -203,9 +219,6 @@ def main():
         # st.write(terms)
         survival = survival.predict_coxph(model_ml, newdata=r_df, type="survival")
         st.write(survival)
-
-    if stop:
-        os._exit(0)
 
 
 if __name__ == "__main__":

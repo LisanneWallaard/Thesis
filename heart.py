@@ -10,14 +10,14 @@ Date
 """
 
 # Necessary imports
-# Installation of these libraries on your device are needed
-# make sure libraries are up to date and do no conflict with each other
+# Make sure libraries have the correct version (see requirements.txt)
+# Some libraries require additional libraries to be installed
 import os
 import streamlit as st
 import pandas as pd
 import numpy as np
 import pickle
-import shap  # you need to have torch, tensorflow installed
+import shap
 from streamlit_shap import st_shap
 import matplotlib.pyplot as plt
 
@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 PATH_MODEL = "model/lr_heart.pkl"
 plot = "shap"
 PATH_SHAP = "explain/shap_val_lr.pkl"
-PATH_EXPL = "explain/expl_lr.pkl"
+# PATH_EXPL = "explain/expl_lr.pkl"
 
 # PATH_MODEL = "model/dt_heart.pkl"
 # plot = "feature_importance"
@@ -59,12 +59,12 @@ mean_MaxHR = 136.81
 std_MaxHR = 25.46
 
 
-def input_user() -> pd.DataFrame:
+def input_user():
     """Gives input possibilities for the user and saves their response
 
     Returns:
-        input_df: a pandas DataFrame containing the input of the user
-        options_df: a pandas DataFrame containing the input possibilities for the user
+        pd.DataFrame: input_df contains the input of the user
+        pd.DataFrame: options_df contains the input possibilities for the user
     """
     age = st.sidebar.number_input("What is your age?", min_value=0, step=1)
     options_sex = ("Female", "Male")
@@ -98,9 +98,14 @@ def input_user() -> pd.DataFrame:
     return input_df
 
 
-def preprocess_input(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Returns a DataFrame with the preprocessed input of the user
+def preprocess_input(df: pd.DataFrame):
+    """Preprocesses the input of the user
+
+    Args:
+        df (pd.DataFrame): contains not preprocessed input of the user
+
+    Returns:
+        pd.DataFrame: df contains preprocessed input of the user
     """
     # Convert categorical variables to dummy variables
     df["Sex"] = df["Sex"].replace({"Male": 1, "Female": 0}).astype(np.uint8)
@@ -145,19 +150,18 @@ def output_prediction(prediction: int, prediction_prob: float):
 
 
 def plot_feature_importance(feature_importances, feature_names):
-    """
-    Plots the feature importance of a model
-    """
-    # Calculate the Importance of the features
-    feature_importance_list = np.zeros(len(feature_names))
-    feature_importance_list = np.add(feature_importance_list, feature_importances)
+    """Plots the feature importances of a model
 
+    Args:
+        feature_importance: contains the feature importances of the model
+        feature_names: contains the feature names of the model
+    """
     # Sort the features on Importance
-    index_sorted = feature_importance_list.argsort()
+    index_sorted = feature_importances.argsort()
 
     # Plot the Importance of the features
     fig, ax = plt.subplots()
-    ax.barh(feature_names[index_sorted], feature_importance_list[index_sorted])
+    ax.barh(feature_names[index_sorted], feature_importances[index_sorted])
     ax.set_xlabel("Feature Importance")
     ax.set_title("Features sorted by Importance")
     st.pyplot(fig)
@@ -225,15 +229,19 @@ def main():
         # Print the prediction
         output_prediction(prediction[0], prediction_prob[0][1])
 
-        # Explain the model
+        # Explain the model if given
+        # Plot the feature importances of the model
         if plot == "feature_importance":
             st.markdown(
                 """To explain how the prediction of the model is made, 
                         the feature importances of the model is shown below."""
             )
-            st.write(type(model_ml.feature_importances_))
-            st.write(type(df.columns))
-            plot_feature_importance(model_ml.feature_importances_, df.columns)
+            # Calculate the Importance of the features
+            feature_importances = np.zeros(len(df.columns))
+            feature_importances = np.add(feature_importances, model_ml.feature_importances_)
+            plot_feature_importance(feature_importances, df.columns)
+
+        # Plot the SHAP values of the model
         elif plot == "shap":
             st.markdown(
                 """To explain how the prediction of the model is made, 
@@ -241,8 +249,9 @@ def main():
             )
             # expl = pickle.load(open(PATH_EXPL, "rb")) # geeft error TypeError: code() argument 13 must be str, not int
             # shap_val = expl(df)
+            # Load the SHAP values
             shap_val = pickle.load(open(PATH_SHAP, "rb"))
-            shap.plots.bar(shap_val)
+            # Plot the SHAP values as a bar plot
             st_shap(shap.plots.bar(shap_val))
             # st_shap(shap.force_plot(expl.expected_value, shap_val, df))
 
