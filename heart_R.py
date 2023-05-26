@@ -12,66 +12,64 @@ Date
 # Inspirated by
 # https://goddoe.github.io/r/machine%20learning/2017/12/17/how-to-use-r-model-in-python.html
 
-# Path to the model
-# PATH_MODEL = "model/rf_heart.rds"
-# plot = 'feature_importance'
-
-# PATH_MODEL = "model/xgb_heart.rds"
-# plot = 'feature_importance'
-
-# PATH_MODEL = "model/bag_mars_heart.rds"
-# plot = 'shap?'
-
-# PATH_MODEL = "model/mars_heart.rds"
-# plot = 'shap?'
-
-# PATH_MODEL = "model/knn_heart.rds"
-# plot = '?'
-
-# PATH_MODEL = "model/log_heart.rds"
-# plot = 'feature_importance'
-
-PATH_MODEL = "model/nb_heart.rds"
-plot = '?'
+# Necessary imports
+# Installation of these libraries on your device are needed
+# make sure libraries are up to date and do no conflict with each other
+import os
 
 # Path to R on your device
 # Enter R.home() in R studio for example
-PATH_R = 'C:/Program Files/R/R-4.3.0'
-
-# Necessary imports
-# Installation of these libraries on your device are needed 
-# make sure libraries are up to date and do no conflict with each other
-import os
+PATH_R = "C:/Program Files/R/R-4.3.0"
 # Set your R path
-os.environ['R_HOME'] = PATH_R
+os.environ["R_HOME"] = PATH_R
 
 import numpy as np
 import pandas as pd
 import streamlit as st
 import rpy2.robjects as ro
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
-from rpy2.robjects import numpy2ri, pandas2ri
+from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import importr
-from rpy2.robjects.conversion import localconverter 
-#import rpy2.rinterface as rinterface
-import shap # you need to have torch, tensorflow installed
-from streamlit_shap import st_shap
+from rpy2.robjects.conversion import localconverter
 import matplotlib.pyplot as plt
 
 
-# Activate converters
+# Path to the model
+PATH_MODEL = "model/rf_heart.rds"
+plot = "feature_importance"  # set importance to impurity
+
+# PATH_MODEL = "model/xgb_heart.rds"
+# plot = 'feature_importance' # set importance to impurity
+
+# PATH_MODEL = "model/bag_mars_heart.rds"
+# plot = 'not_given'
+
+# PATH_MODEL = "model/mars_heart.rds"
+# plot = 'not_given'
+
+# PATH_MODEL = "model/knn_heart.rds"
+# plot = 'not_given'
+
+# PATH_MODEL = "model/log_heart.rds"
+# plot = 'feature_importance' # set importance to impurity
+
+# PATH_MODEL = "model/nb_heart.rds"
+# plot = 'not_given'
+
+# Activate pandas2ri
 pandas2ri.activate()
-numpy2ri.activate()
 
 # Set R
 r = ro.r
 
 
 def input_user() -> pd.DataFrame:
+    """Gives input possibilities for the user and saves their response
+
+    Returns:
+        input_df: a pandas DataFrame containing the input of the user
+        options_df: a pandas DataFrame containing the input possibilities for the user
     """
-    Returns a DataFrame with the input of the user
-    """
-    
     age = st.sidebar.number_input("What is your age?", min_value=0, step=1)
     options_sex = ("Female", "Male")
     sex = st.sidebar.selectbox("What is your sex?", options=options_sex)
@@ -84,94 +82,114 @@ def input_user() -> pd.DataFrame:
     resting_ecg = st.sidebar.selectbox("Do you have a LVH resting ECG?", options=options_yes_no)
     max_hr = st.sidebar.number_input("What is your maximum heart rate achieved?", min_value=0, step=1)
     exercise_angina = st.sidebar.selectbox("Do you have exercise induced angina?", options=options_yes_no)
-    oldpeak = st.sidebar.number_input("What is your oldpeak (ST)?",step=0.1,format="%.1f")
+    oldpeak = st.sidebar.number_input("What is your oldpeak (ST)?", step=0.1, format="%.1f")
     options_st_slope = ("Down", "Flat", "Up")
     st_slope = st.sidebar.selectbox("What is your ST slope?", options=options_st_slope)
 
     # Dataframe containing the input of the user
-    input_df = pd.DataFrame({
-        "Age": [age],
-        "Sex": [sex], 
-        "ChestPainType": [chest_pain_type],
-        "RestingBP": [resting_bp],
-        "Cholesterol": [cholesterol],
-        "FastingBS": [fasting_bs],
-        "RestingECG.LVH": [resting_ecg],
-        "MaxHR": [max_hr],	
-        "ExerciseAngina": [exercise_angina],
-        "Oldpeak": [oldpeak],
-        "ST_Slope": [st_slope]
-    })
-    
+    input_df = pd.DataFrame(
+        {
+            "Age": [age],
+            "Sex": [sex],
+            "ChestPainType": [chest_pain_type],
+            "RestingBP": [resting_bp],
+            "Cholesterol": [cholesterol],
+            "FastingBS": [fasting_bs],
+            "RestingECG.LVH": [resting_ecg],
+            "MaxHR": [max_hr],
+            "ExerciseAngina": [exercise_angina],
+            "Oldpeak": [oldpeak],
+            "ST_Slope": [st_slope],
+        }
+    )
+
     # Dataframe containing the input possibilities for the user
     options_dict = {
-        "Age": list(range(0,126)),
-        "Sex": list(options_sex), 
+        "Age": list(range(0, 126)),
+        "Sex": list(options_sex),
         "ChestPainType": list(options_chest_pain),
-        "RestingBP": list(range(0,201)),
-        "Cholesterol": list(range(0,604)),
+        "RestingBP": list(range(0, 201)),
+        "Cholesterol": list(range(0, 604)),
         "FastingBS": list(options_yes_no),
         "RestingECG.LVH": list(options_yes_no),
-        "MaxHR": list(range(60,203)),	
+        "MaxHR": list(range(60, 203)),
         "ExerciseAngina": list(options_yes_no),
         "Oldpeak": list(np.arange(-2.6, 6.2, 0.1)),
-        "ST_Slope": list(options_st_slope)
+        "ST_Slope": list(options_st_slope),
     }
     options_df = pd.DataFrame(dict([(key, pd.Series(value)) for key, value in options_dict.items()]))
 
     return input_df, options_df
 
+
 def preprocess_input(df: pd.DataFrame) -> pd.DataFrame:
-    """ 
+    """
     Returns a DataFrame with the preprocessed input of the user
     """
-    
+
     # One-hot encoder for some categorical variables
-    ohe = OneHotEncoder(handle_unknown='ignore')
-    
+    ohe = OneHotEncoder(handle_unknown="ignore")
+
     # Label encoder for some categorical variables
     le = LabelEncoder()
-    
+
     # Define some categorical columns for labelling
-    label_columns = ['Sex', 'FastingBS', 'RestingECG.LVH',  'ST_Slope']
-    
+    label_columns = ["Sex", "FastingBS", "RestingECG.LVH", "ST_Slope"]
+
     # Label encode some categorical variables
     for col in label_columns:
         df_nan = df[col].dropna()
         df[col] = pd.DataFrame(le.fit_transform(df_nan))
-    
+
     # # Label some categorical variables
     # for col in label_columns:
     #     dummy_column = pd.get_dummies(df[col], prefix=col)
     #     df = pd.concat([df, dummy_column], axis=1)
     #     del df[col]
-    
+
     # Define some categorical columns for one-hot encoding
     hot_columns = ["ChestPainType", "ExerciseAngina"]
     # Define the corresponding column names for one-hot encoding (same index as hot_columns)
-    column_names = [["ChestPainType.ASY", "ChestPainType.ATA", "ChestPainType.NAP", "ChestPainType.TA"], ["ExerciseAngina.N", "ExerciseAngina.Y"]]
-    
+    column_names = [
+        ["ChestPainType.ASY", "ChestPainType.ATA", "ChestPainType.NAP", "ChestPainType.TA"],
+        ["ExerciseAngina.N", "ExerciseAngina.Y"],
+    ]
+
     # One-hot encode some categorical variables
     for col in hot_columns:
         df_nan = df[[col]].dropna()
-        encoder_df = pd.DataFrame(ohe.fit_transform(df_nan).toarray(), columns=column_names[hot_columns.index(col)])
+        encoder_df = pd.DataFrame(
+            ohe.fit_transform(df_nan).toarray(), columns=column_names[hot_columns.index(col)]
+        )
         df = df.join(encoder_df)
         del df[col]
-    
-    # Select only the first row (the user input data)  
+
+    # Select only the first row (the user input data)
     df = df[:1]
-    
+
     return df
 
+
 def output_prediction(prediction: int, prediction_prob: float):
+    """Prints the prediction itself and the probability of the prediction
+
+    Args:
+        prediction (int): the prediction of the model, 0 (healthy) or 1 (not healthy)
+        prediction_prob (float): the probability of the prediction
+    """
     if prediction == 0:
-        st.markdown(f"**:green[The probability that you will have"
-                f" a heart disease is {round(prediction_prob * 100, 2)}%."
-                f" You seem to be healthy!]**")
+        st.markdown(
+            f"**:green[The probability that you will have"
+            f" a heart disease is {round(prediction_prob * 100, 2)}%."
+            f" You seem to be healthy!]**"
+        )
     else:
-        st.markdown(f"**:red[The probability that you will have"
-                    f" a heart disease is {round(prediction_prob * 100, 2)}%."
-                    f" It sounds like you are not healthy!]**")
+        st.markdown(
+            f"**:red[The probability that you will have"
+            f" a heart disease is {round(prediction_prob * 100, 2)}%."
+            f" It sounds like you are not healthy!]**"
+        )
+
 
 def plot_feature_importance(feature_importance, feature_names):
     """
@@ -182,22 +200,22 @@ def plot_feature_importance(feature_importance, feature_names):
     ax.barh(feature_names[index_sorted], feature_importance[index_sorted])
     ax.set_xlabel("Feature Importance")
     ax.set_title("Features sorted by Importance")
-    st.pyplot(fig)       
-    
+    st.pyplot(fig)
+
 
 def main():
     # Add the title and icon of the web page
-    st.set_page_config(
-        page_title="Heart Failure Prediction App",
-        page_icon="images/heart-fav.png"
-    )
+    st.set_page_config(page_title="Heart Failure Prediction App", page_icon="images/heart-fav.png")
 
     # Add the title and subtitle of the front page
     st.title("Heart Failure Prediction")
-    st.subheader("This web app can tell your probability to get a heart disease based on machine learning models. ")  
-        
+    st.subheader(
+        "This web app can tell your probability to get a heart disease based on machine learning models. "
+    )
+
     # Add text on the front page
-    st.markdown("""
+    st.markdown(
+        """
     This application can use several models. You can see the steps of building the model, 
     evaluating it, and cleaning the data itself on [Kaggle](https://www.kaggle.com/code/tanmay111999/heart-failure-prediction-cv-score-90-5-models).
     
@@ -212,7 +230,8 @@ def main():
     **Author: Lisanne Wallaard**
     
     *Based on this [application](https://github.com/kamilpytlak/heart-condition-checker)*
-    """)
+    """
+    )
 
     # Add a sidebar with a picture for the input to the front page
     st.sidebar.title("Feature Selection")
@@ -224,14 +243,29 @@ def main():
     # Preprocess the input data
     df = preprocess_input(df_merge)
     # Put the dataframe in the correct order
-    order = ['Age', 'Sex', 'ChestPainType.ASY', 'ChestPainType.ATA', 'ChestPainType.NAP', 'ChestPainType.TA', 'RestingBP',
-    'Cholesterol', 'FastingBS', 'RestingECG.LVH', 'MaxHR', 'ExerciseAngina.N', 
-    'ExerciseAngina.Y', 'Oldpeak', 'ST_Slope']
+    order = [
+        "Age",
+        "Sex",
+        "ChestPainType.ASY",
+        "ChestPainType.ATA",
+        "ChestPainType.NAP",
+        "ChestPainType.TA",
+        "RestingBP",
+        "Cholesterol",
+        "FastingBS",
+        "RestingECG.LVH",
+        "MaxHR",
+        "ExerciseAngina.N",
+        "ExerciseAngina.Y",
+        "Oldpeak",
+        "ST_Slope",
+    ]
     df = df[order]
-    
+
+    # Convert the pandas DataFrame to an R DataFrame
     with localconverter(ro.default_converter + pandas2ri.converter):
         r_df = ro.conversion.rpy2py(df)
-        
+
     # Add a button to the side bar to submit the input data
     submission = st.sidebar.button("Predict", type="secondary", use_container_width=True)
 
@@ -239,46 +273,38 @@ def main():
     stop = st.sidebar.button(label="Stop", type="primary", use_container_width=True)
 
     # Load the machine learning model
-    model_ml = r.readRDS(PATH_MODEL)  
-    
+    model_ml = r.readRDS(PATH_MODEL)
+
     # Print the prediction
     if submission:
         # Get the class prediction
-        prediction = r.predict(model_ml, new_data=r_df, type='class')
+        prediction = r.predict(model_ml, new_data=r_df, type="class")
 
         # Get the probability of both classes
-        prediction_prob = r.predict(model_ml, new_data=r_df, type='prob')
+        prediction_prob = r.predict(model_ml, new_data=r_df, type="prob")
 
         # Print the prediction
         output_prediction(int(prediction[0][0]), prediction_prob[0][1])
-        
+
         # Explain the model
-        if plot == 'feature_importance':
-            vip = importr('vip')  
-            feature_importance_R = vip.vip(model_ml)  
-            feature_importance_R = feature_importance_R.rx2('data')
-            #feature_importance_R = r.readRDS(PATH_IMP)
-            with localconverter(ro.default_converter + pandas2ri.converter):
+        if plot == "feature_importance":
+            vip = importr("vip")
+            feature_importance_R = vip.vip(model_ml)
+            feature_importance_R = feature_importance_R.rx2("data")
+            # feature_importance_R = r.readRDS(PATH_IMP)
+            with localconverter(ro.default_converter + ro.pandas2ri.converter):
                 feature_importance = ro.conversion.rpy2py(feature_importance_R)
             # st.dataframe(feature_importance)
-            st.markdown("""To explain how the prediction of the model is made, 
-                        the feature importances of the model is shown below.""")
-            plot_feature_importance(feature_importance['Importance'], feature_importance['Variable'])
-        elif plot == 'shap':
-            st.markdown("""To explain how the prediction of the model is made, 
-                        the SHAP values of the model is shown below.""")
-            # expl = pickle.load(open(PATH_EXPL, "rb")) # geeft error TypeError: code() argument 13 must be str, not int
-            # shap_val = expl(df)
-            shap_val = pickle.load(open(PATH_SHAP, "rb"))
-            shap.plots.bar(shap_val)
-            st_shap(shap.plots.bar(shap_val))
-            # st_shap(shap.force_plot(expl.expected_value, shap_val, df))
+            st.markdown(
+                """To explain how the prediction of the model is made, 
+                        the feature importances of the model is shown below."""
+            )
+            plot_feature_importance(feature_importance["Importance"], feature_importance["Variable"])
 
     if stop:
         os._exit(0)
-        
-if __name__ == "__main__":   
-    
+
+
+if __name__ == "__main__":
+
     main()
-    
-    
