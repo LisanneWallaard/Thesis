@@ -1,6 +1,6 @@
 """
 Assignment
-    A framework for the implementation of ML models in python using streamlit
+    A framework for the implementation of ML models in Python using streamlit
 Course
     Thesis
 Author
