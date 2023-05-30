@@ -188,7 +188,9 @@ def plot_feature_importance(feature_importances, feature_names):
 
 def main():
     # Add the title and icon of the web page
-    st.set_page_config(page_title="... App", page_icon="images/heart-fav.png")
+    # The icon can be downloaded from https://github.com/LisanneWallaard/Thesis/blob/main/heart-fav.png
+    # It is also possible to add your own image and change the path
+    st.set_page_config(page_title="... App", page_icon="heart-fav.png")
 
     # Add the title and subtitle of the front page
     st.title("... Prediction")
@@ -214,7 +216,7 @@ def main():
     """
     )
 
-    # Add a sidebar with a picture for the input to the front page
+    # Add a sidebar for the input to the front page
     st.sidebar.title("Input Features")
 
     # Get the input data and option possibilities from the user

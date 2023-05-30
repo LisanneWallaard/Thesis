@@ -167,7 +167,7 @@ def main():
     )
 
     # Add a sidebar with a picture for the input to the front page
-    st.sidebar.title("Feature Selection")
+    st.sidebar.title("Input features")
 
     # Get the input data from the user
     df_input = input_user()

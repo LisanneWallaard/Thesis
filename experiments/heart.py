@@ -197,7 +197,7 @@ def main():
     """
     )
 
-    # Add a sidebar with a picture for the input to the front page
+    # Add a sidebar for the input to the front page
     st.sidebar.title("Input Features")
 
     # Get the input data from the user
