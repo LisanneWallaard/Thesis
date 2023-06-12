@@ -10,10 +10,10 @@ Model Deployment in Healthcare
 This research aims to reduce the gap between developing and implementing predictive machine learning models. To do so, a framework has been made that simplifies the implementation of these models. The framework results from multiple experiments (see `experiments`) containing applications of machine learning models created in R and Python:
 - `app.py` provides code that implements a logistic regression concerning heart disease. The code is from: https://github.com/kamilpytlak/heart-condition-checker.
 - `app2.py` is an adjusted version of `app.py` that works without a dataset.
-- `heart.py` provides code that implements models developed in `heart_models.ipynb`.
-- `stroke.py` provides code that implements models developed in `stroke_models.ipynb`.
-- `heart_R.py`provides code that implements models developed in `heart.R`.
-- `cox_R.py` contains not working code trying to implement a COX-PH model developed in `cox.R`.
+- `heart.py` provides code that implements heart failure models developed in `heart_models.ipynb`.
+- `stroke.py` provides code that implements stroke prediction models developed in `stroke_models.ipynb`.
+- `heart_R.py`provides code that implements heart failure models developed in `heart.R`.
+- `cox_R.py` contains not working code for implementing a COX-PH model concerning heart failure, developed in `cox.R`.
 - `model` is a folder containing the pickle and RDS files of the developed models.
 - `data` is a folder containing the data for developing medical machine learning models. 
 - `explain` is a folder containing pickle files considering the explanation of the model like SHAP values.
