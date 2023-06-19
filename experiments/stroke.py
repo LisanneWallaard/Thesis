@@ -28,7 +28,7 @@ PATH_SHAP = "explain/shap_val_lr_stroke.pkl"
 # PATH_EXPL = "explain/expl_lr_stroke.pkl"
 
 # PATH_MODEL = "model/rf_stroke.pkl"
-# plot = 'feature_importance'
+# plot = "feature_importance"
 
 # PATH_MODEL = "model/svm_stroke.pkl" # set probability=True in the model
 # plot = 'not_given'

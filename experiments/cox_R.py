@@ -29,6 +29,9 @@ import streamlit as st
 import rpy2.robjects as ro
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from rpy2.robjects.packages import importr
+from rpy2.robjects import pandas2ri
+
+pandas2ri.activate()
 
 # Path to the model
 PATH_MODEL = "model/cox_num.rds"
@@ -172,6 +175,9 @@ def main():
     # Get the input data from the user
     df_input = input_user()
 
+    # Print the input data
+    st.dataframe(df_input)
+
     # Add a button to the side bar to submit the input data
     submission = st.sidebar.button("Predict", type="secondary", use_container_width=True)
 
@@ -193,10 +199,11 @@ def main():
         # Get the class prediction
 
         # https://www.rdocumentation.org/packages/survival/versions/3.5-5/topics/predict.coxph
-        lp = survival.predict_coxph(model_ml, newdata=df_input, type="lp")
-        st.write(lp)
-        risk = survival.predict_coxph(model_ml, newdata=df_input, type="risk")
-        st.write(risk)
+        # lp = survival.predict_coxph(model_ml, newdata=df_input, type="lp")
+        # st.write(lp)
+        # risk = survival.predict_coxph(model_ml, newdata=df_input, type="risk")
+        # st.write(risk)
+
         # expected = survival.predict_coxph(model_ml, newdata=df_input, type='expected')
         # st.write(expected)
         # terms = survival.predict_coxph(model_ml, newdata=df_input, type='terms')
