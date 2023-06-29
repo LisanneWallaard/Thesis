@@ -127,15 +127,15 @@ def preprocess_input(df: pd.DataFrame):
 #     """
 #     if prediction == 0:
 #         st.markdown(
-#             f"**:green[The probability that you will have"
-#             f" ... is {round(prediction_prob * 100, 2)}%."
-#             f" You seem to be healthy!]**"
+#             f"**:green[The model estimates the probability that you will have"
+#             f" ... now at {round(prediction_prob * 100, 2)}%."
+#             f" Therefore the model predicts that you are healthy at the moment!]**"
 #         )
 #     else:
 #         st.markdown(
-#             f"**:red[The probability that you will have"
-#             f" ... is {round(prediction_prob * 100, 2)}%."
-#             f" It sounds like you are not healthy!]**"
+#             f"**:red[The model estimates the probability that you will have"
+#             f" ... now at {round(prediction_prob * 100, 2)}%."
+#             f" Therefore the model predicts that you are not healthy at the moment!]**"
 #         )
 
 

@@ -174,15 +174,15 @@ def output_prediction(prediction: int, prediction_prob: float):
     """
     if prediction == 0:
         st.markdown(
-            f"**:green[The probability that you will have"
-            f" a heart disease is {round(prediction_prob * 100, 2)}%."
-            f" You seem to be healthy!]**"
+            f"**:green[The model estimates the probability that you will have"
+            f" a heart disease now at {round(prediction_prob * 100, 2)}%."
+            f" Therefore the model predicts that you are healthy at the moment!]**"
         )
     else:
         st.markdown(
-            f"**:red[The probability that you will have"
-            f" a heart disease is {round(prediction_prob * 100, 2)}%."
-            f" It sounds like you are not healthy!]**"
+            f"**:red[The model estimates the probability that you will have"
+            f" a heart disease now at {round(prediction_prob * 100, 2)}%."
+            f" Therefore the model predicts that you are not healthy at the moment!]**"
         )
 
 
@@ -215,7 +215,7 @@ def main():
     st.markdown(
         """
     This application can use several models. You can see the steps of building the model, 
-    evaluating it, and cleaning the data itself on [Kaggle](https://www.kaggle.com/code/tanmay111999/heart-failure-prediction-cv-score-90-5-models).
+    evaluating it, and cleaning the data itself on [Kaggle](https://www.kaggle.com/code/burakdilber/heart-failure-eda-preprocessing-and-10-models).
     
     In order to get a prediction about your heart disease status, you need to take the following steps:
     1. Fill in the asked input features.
