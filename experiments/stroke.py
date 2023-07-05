@@ -100,15 +100,15 @@ def output_prediction(prediction: int, prediction_prob: float):
     """
     if prediction == 0:
         st.markdown(
-            f"**:green[The model estimates the probability that you will have"
-            f" a stroke now at {round(prediction_prob * 100, 2)}%."
-            f" Therefore the model predicts that you are healthy at the moment!]**"
+            f"**:green[Given your input variables, the model estimates the probability that you will ever have"
+            f" a stroke at {round(prediction_prob * 100, 2)}%."
+            f" Therefore the model predicts that you are healthy!]**"
         )
     else:
         st.markdown(
-            f"**:red[The model estimates the probability that you will have"
-            f" stroke now at {round(prediction_prob * 100, 2)}%."
-            f" Therefore the model predicts that you are not healthy at the moment!]**"
+            f"**:red[Given your input variables, the model estimates the probability that you will ever have"
+            f" stroke at {round(prediction_prob * 100, 2)}%."
+            f" Therefore the model predicts that you are not healthy!]**"
         )
 
 

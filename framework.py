@@ -155,15 +155,15 @@ def output_prediction(prediction: int, prediction_prob: float):
     """
     if prediction == 0:
         st.markdown(
-            f"**:green[The probability that you will have"
-            f" ... is {round(prediction_prob * 100, 2)}%."
-            f" You seem to be healthy!]**"
+            f"**:green[Given your input variables, the model estimates the probability that you will ever have"
+            f" ... at {round(prediction_prob * 100, 2)}%."
+            f" Therefore the model predicts that you are healthy!]**"
         )
     else:
         st.markdown(
-            f"**:red[The probability that you will have"
-            f" ... is {round(prediction_prob * 100, 2)}%."
-            f" It sounds like you are not healthy!]**"
+            f"**:red[Given your input variables, the model estimates the probability that you will ever have"
+            f" ... at {round(prediction_prob * 100, 2)}%."
+            f" Therefore the model predicts that you are not healthy!]**"
         )
 
 

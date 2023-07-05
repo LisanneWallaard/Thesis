@@ -209,6 +209,7 @@ def main():
         "KidneyDisease",
         "SkinCancer",
     ]
+
     # Encode the categorical variables
     for cat_col in cat_cols:
         dummy_col = pd.get_dummies(df[cat_col], prefix=cat_col)
